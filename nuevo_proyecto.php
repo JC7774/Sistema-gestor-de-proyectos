@@ -1,8 +1,15 @@
 <?php
 include 'conexion.php';
+session_start();
 
-// Obtener lista de programadores (nombre completo)
-$programadores = $conn->query("SELECT CONCAT(nombre, ' ', apellido_paterno) AS nombre_completo FROM usuarios WHERE rol = 'programador'");
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$programadores = $conn->query("
+    SELECT id, CONCAT(nombre, ' ', apellido_paterno) AS nombre_completo 
+    FROM usuarios 
+    WHERE rol = 'programador'
+");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = $_POST['nombre'];
@@ -13,15 +20,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $comentarios = $_POST['comentarios'];
     $fecha_inicio = $_POST['fecha_inicio'];
     $fecha_fin = $_POST['fecha_fin'];
+    $fecha_creacion = date("Y-m-d");
 
-    $sql = "INSERT INTO proyectos (nombre, descripcion, estatus, complejidad, asignado_a, comentarios, fecha_inicio, fecha_fin)
-            VALUES ('$nombre', '$descripcion', '$estatus', '$complejidad', '$asignado_a', '$comentarios', '$fecha_inicio', '$fecha_fin')";
+    if (strtotime($fecha_fin) < strtotime($fecha_inicio)) {
+        echo "La fecha de fin no puede ser menor a la de inicio.";
+        exit;
+    }
+
+    $sql = "INSERT INTO proyectos 
+        (nombre, descripcion, estatus, complejidad, asignado_a, comentarios, fecha_inicio, fecha_fin, fecha_creacion)
+        VALUES 
+        ('$nombre', '$descripcion', '$estatus', '$complejidad', '$asignado_a', '$comentarios', '$fecha_inicio', '$fecha_fin', '$fecha_creacion')";
 
     if ($conn->query($sql) === TRUE) {
-        header("Location: arquitecto_panel.php");
+        echo "<script>alert('✅ Proyecto registrado correctamente'); window.location.href = 'arquitecto_panel.php';</script>";
         exit;
     } else {
-        echo "Error: " . $conn->error;
+        echo "❌ Error al guardar: " . $conn->error;
     }
 }
 ?>
@@ -94,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <h2>Agregar nuevo proyecto</h2>
-
 <form method="POST">
     <label>Nombre del proyecto:</label>
     <input type="text" name="nombre" required>
@@ -121,9 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <select name="asignado_a" required>
         <option value="">-- Selecciona un programador --</option>
         <?php while ($p = $programadores->fetch_assoc()): ?>
-            <option value="<?php echo $p['nombre_completo']; ?>">
-                <?php echo $p['nombre_completo']; ?>
-            </option>
+            <option value="<?= $p['id'] ?>"><?= $p['nombre_completo'] ?></option>
         <?php endwhile; ?>
     </select>
 

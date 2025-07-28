@@ -22,18 +22,17 @@ $condicion = count($condiciones) > 0 ? "WHERE " . implode(" AND ", $condiciones)
 $resultado = $conn->query("
     SELECT p.*, CONCAT(u.nombre, ' ', u.apellido_paterno) AS nombre_programador
     FROM proyectos p
-    LEFT JOIN usuarios u ON p.asignado_a = u.empleado
+    LEFT JOIN usuarios u ON p.asignado_a = u.id
     $condicion
 ");
 
 $programadores = $conn->query("
-    SELECT DISTINCT u.empleado, u.nombre, u.apellido_paterno
+    SELECT DISTINCT u.id, u.nombre, u.apellido_paterno
     FROM usuarios u
-    INNER JOIN proyectos p ON u.empleado = p.asignado_a
+    INNER JOIN proyectos p ON u.id = p.asignado_a
     WHERE u.rol = 'programador'
 ");
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -82,7 +81,7 @@ $programadores = $conn->query("
             color: white;
         }
         .documento-link {
-            display: block;
+            display: inline-block;
             color: #0033A0;
             text-decoration: underline;
         }
@@ -137,7 +136,7 @@ $programadores = $conn->query("
 <body>
 
 <header>
-    <h1> Bienvenido Arquitecto</h1>
+    <h1>Bienvenido Arquitecto</h1>
     <a class="logout" href="logout.php">Cerrar sesión</a>
 </header>
 
@@ -150,17 +149,17 @@ $programadores = $conn->query("
         <label style="font-weight: bold;">Estatus:</label>
         <select name="estatus" onchange="document.getElementById('filtrosForm').submit();" style="padding: 6px; border-radius: 5px; margin-bottom: 10px;">
             <option value="">-- Todos --</option>
-            <option value="activo" <?php if ($filtro_estatus == 'activo') echo 'selected'; ?>>Activo</option>
-            <option value="pausado" <?php if ($filtro_estatus == 'pausado') echo 'selected'; ?>>Pausado</option>
-            <option value="finalizado" <?php if ($filtro_estatus == 'finalizado') echo 'selected'; ?>>Finalizado</option>
+            <option value="activo" <?= $filtro_estatus == 'activo' ? 'selected' : '' ?>>Activo</option>
+            <option value="pausado" <?= $filtro_estatus == 'pausado' ? 'selected' : '' ?>>Pausado</option>
+            <option value="finalizado" <?= $filtro_estatus == 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
         </select>
 
         <label style="font-weight: bold;">Asignado a (programador):</label>
         <select name="programador" onchange="document.getElementById('filtrosForm').submit();" style="padding: 6px; border-radius: 5px; margin-bottom: 10px;">
             <option value="">-- Todos --</option>
             <?php while ($p = $programadores->fetch_assoc()): ?>
-                <option value="<?php echo $p['empleado']; ?>" <?php if ($filtro_programador == $p['empleado']) echo 'selected'; ?>>
-                    <?php echo $p['nombre'] . ' ' . $p['apellido_paterno']; ?>
+                <option value="<?= $p['id'] ?>" <?= $filtro_programador == $p['id'] ? 'selected' : '' ?>>
+                    <?= $p['nombre'] . ' ' . $p['apellido_paterno'] ?>
                 </option>
             <?php endwhile; ?>
         </select>
@@ -188,25 +187,28 @@ $programadores = $conn->query("
             <th>Acciones</th>
         </tr>
         <?php while ($fila = $resultado->fetch_assoc()): ?>
-            <?php $docs = $conn->query("SELECT nombre_archivo, ruta_archivo FROM documentos_proyecto WHERE id_proyecto = " . $fila['id']); ?>
+            <?php $docs = $conn->query("SELECT id, nombre_archivo, ruta_archivo FROM documentos_proyecto WHERE id_proyecto = " . $fila['id']); ?>
             <tr>
-                <td><?php echo $fila['id']; ?></td>
-                <td><?php echo $fila['nombre']; ?></td>
-                <td><?php echo $fila['descripcion']; ?></td>
-                <td><?php echo $fila['estatus']; ?></td>
-                <td><?php echo $fila['complejidad']; ?></td>
-                <td><?php echo $fila['nombre_programador']; ?></td>
-                <td><?php echo $fila['comentarios']; ?></td>
-                <td><?php echo $fila['fecha_inicio']; ?></td>
-                <td><?php echo $fila['fecha_fin']; ?></td>
+                <td><?= $fila['id'] ?></td>
+                <td><?= $fila['nombre'] ?></td>
+                <td><?= $fila['descripcion'] ?></td>
+                <td><?= $fila['estatus'] ?></td>
+                <td><?= $fila['complejidad'] ?></td>
+                <td><?= $fila['nombre_programador'] ?? 'Sin asignar' ?></td>
+                <td><?= $fila['comentarios'] ?></td>
+                <td><?= $fila['fecha_inicio'] ?></td>
+                <td><?= $fila['fecha_fin'] ?></td>
                 <td>
                     <?php while ($doc = $docs->fetch_assoc()): ?>
-                        <a class="documento-link" href="<?php echo $doc['ruta_archivo']; ?>" target="_blank"><?php echo $doc['nombre_archivo']; ?></a>
+                        <div style="margin-bottom: 8px;">
+                            <a class="documento-link" href="<?= $doc['ruta_archivo'] ?>" target="_blank"><?= $doc['nombre_archivo'] ?></a>
+                            <a class="eliminar-btn" href="eliminar_documento.php?id=<?= $doc['id'] ?>" onclick="return confirm('¿Eliminar este documento?');">❌</a>
+                        </div>
                     <?php endwhile; ?>
                 </td>
                 <td>
-                    <a class="editar-btn" href="editar_proyecto.php?id=<?php echo $fila['id']; ?>">Editar</a><br><br>
-                    <a class="eliminar-btn" href="eliminar_proyecto.php?id=<?php echo $fila['id']; ?>" onclick="return confirm('¿Eliminar este proyecto?');">Eliminar</a>
+                    <a class="editar-btn" href="editar_proyecto.php?id=<?= $fila['id'] ?>">Editar</a><br><br>
+                    <a class="eliminar-btn" href="eliminar_proyecto.php?id=<?= $fila['id'] ?>" onclick="return confirm('¿Eliminar este proyecto?');">Eliminar</a>
                 </td>
             </tr>
         <?php endwhile; ?>

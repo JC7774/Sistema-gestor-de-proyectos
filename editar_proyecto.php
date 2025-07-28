@@ -20,7 +20,7 @@ if ($resultado->num_rows === 0) {
 }
 $proyecto = $resultado->fetch_assoc();
 
-$programadores = $conn->query("SELECT empleado, nombre, apellido_paterno FROM usuarios WHERE rol = 'programador'");
+$programadores = $conn->query("SELECT id, nombre, apellido_paterno FROM usuarios WHERE rol = 'programador'");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = $_POST['nombre'];
@@ -121,52 +121,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <h2>Editar Proyecto</h2>
-
 <form method="POST">
     <label>Nombre del proyecto:</label>
-    <input type="text" name="nombre" value="<?php echo $proyecto['nombre']; ?>" required>
+    <input type="text" name="nombre" value="<?= $proyecto['nombre'] ?>" required>
 
     <label>Descripción:</label>
-    <textarea name="descripcion" required><?php echo $proyecto['descripcion']; ?></textarea>
+    <textarea name="descripcion" required><?= $proyecto['descripcion'] ?></textarea>
 
     <label>Estatus:</label>
     <select name="estatus" required>
-        <option value="activo" <?php if ($proyecto['estatus'] == 'activo') echo 'selected'; ?>>Activo</option>
-        <option value="pausado" <?php if ($proyecto['estatus'] == 'pausado') echo 'selected'; ?>>Pausado</option>
-        <option value="finalizado" <?php if ($proyecto['estatus'] == 'finalizado') echo 'selected'; ?>>Finalizado</option>
+        <option value="activo" <?= $proyecto['estatus'] == 'activo' ? 'selected' : '' ?>>Activo</option>
+        <option value="pausado" <?= $proyecto['estatus'] == 'pausado' ? 'selected' : '' ?>>Pausado</option>
+        <option value="finalizado" <?= $proyecto['estatus'] == 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
     </select>
 
     <label>Complejidad:</label>
     <select name="complejidad" required>
-        <option value="express" <?php if ($proyecto['complejidad'] == 'express') echo 'selected'; ?>>Express</option>
-        <option value="medio" <?php if ($proyecto['complejidad'] == 'medio') echo 'selected'; ?>>Medio</option>
-        <option value="complejo" <?php if ($proyecto['complejidad'] == 'complejo') echo 'selected'; ?>>Complejo</option>
-        <option value="especial" <?php if ($proyecto['complejidad'] == 'especial') echo 'selected'; ?>>Especial</option>
+        <option value="express" <?= $proyecto['complejidad'] == 'express' ? 'selected' : '' ?>>Express</option>
+        <option value="medio" <?= $proyecto['complejidad'] == 'medio' ? 'selected' : '' ?>>Medio</option>
+        <option value="complejo" <?= $proyecto['complejidad'] == 'complejo' ? 'selected' : '' ?>>Complejo</option>
+        <option value="especial" <?= $proyecto['complejidad'] == 'especial' ? 'selected' : '' ?>>Especial</option>
     </select>
 
     <label>Asignado a (programador):</label>
     <select name="asignado_a" required>
         <option value="">-- Selecciona --</option>
         <?php mysqli_data_seek($programadores, 0); while ($p = $programadores->fetch_assoc()): ?>
-            <option value="<?php echo $p['empleado']; ?>" <?php if ($proyecto['asignado_a'] == $p['empleado']) echo 'selected'; ?>>
-                <?php echo $p['nombre'] . ' ' . $p['apellido_paterno']; ?>
+            <option value="<?= $p['id'] ?>" <?= $proyecto['asignado_a'] == $p['id'] ? 'selected' : '' ?>>
+                <?= $p['nombre'] . ' ' . $p['apellido_paterno'] ?>
             </option>
         <?php endwhile; ?>
     </select>
 
     <label>Comentarios:</label>
-    <textarea name="comentarios"><?php echo $proyecto['comentarios']; ?></textarea>
+    <textarea name="comentarios"><?= $proyecto['comentarios'] ?></textarea>
 
     <label>Fecha de inicio:</label>
-    <input type="date" name="fecha_inicio" value="<?php echo $proyecto['fecha_inicio']; ?>" required>
+    <input type="date" name="fecha_inicio" value="<?= $proyecto['fecha_inicio'] ?>" required>
 
     <label>Fecha de fin:</label>
-    <input type="date" name="fecha_fin" value="<?php echo $proyecto['fecha_fin']; ?>" required>
+    <input type="date" name="fecha_fin" value="<?= $proyecto['fecha_fin'] ?>" required>
 
     <input type="submit" value="Guardar cambios">
 </form>
 
-<a class="volver" href="<?php echo ($_SESSION['rol'] === 'administrador') ? 'admin_panel.php' : 'arquitecto_panel.php'; ?>">← Volver al panel</a>
+<a class="volver" href="<?= ($_SESSION['rol'] === 'administrador') ? 'admin_panel.php' : 'arquitecto_panel.php' ?>">← Volver al panel</a>
 
 </body>
 </html>

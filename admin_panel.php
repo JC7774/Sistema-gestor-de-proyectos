@@ -17,17 +17,25 @@ $programadores = $conn->query("SELECT empleado, nombre, apellido_paterno FROM us
 
 $condiciones = [];
 if ($filtro_programador !== '') {
-    $condiciones[] = "asignado_a = '$filtro_programador'";
+    $condiciones[] = "u.empleado = '$filtro_programador'";
 }
 if ($filtro_complejidad !== '') {
-    $condiciones[] = "complejidad = '$filtro_complejidad'";
+    $condiciones[] = "p.complejidad = '$filtro_complejidad'";
 }
 if ($filtro_estatus !== '') {
-    $condiciones[] = "estatus = '$filtro_estatus'";
+    $condiciones[] = "p.estatus = '$filtro_estatus'";
 }
 $where = count($condiciones) > 0 ? "WHERE " . implode(" AND ", $condiciones) : "";
 
-$proyectos = $conn->query("SELECT * FROM proyectos $where");
+$proyectos = $conn->query("
+    SELECT p.*, 
+           u.nombre AS nombre_programador, 
+           u.apellido_paterno AS apellido_programador_paterno, 
+           u.apellido_materno AS apellido_programador_materno
+    FROM proyectos p
+    LEFT JOIN usuarios u ON p.asignado_a = u.id
+    $where
+");
 ?>
 
 <!DOCTYPE html>
@@ -120,14 +128,14 @@ $proyectos = $conn->query("SELECT * FROM proyectos $where");
         </tr>
         <?php while ($u = $usuarios->fetch_assoc()): ?>
         <tr>
-            <td><?php echo $u['id']; ?></td>
-            <td><?php echo $u['empleado']; ?></td>
-            <td><?php echo $u['nombre'] . ' ' . $u['apellido_paterno'] . ' ' . $u['apellido_materno']; ?></td>
-            <td><?php echo $u['correo']; ?></td>
-            <td><?php echo $u['rol']; ?></td>
+            <td><?= $u['id']; ?></td>
+            <td><?= $u['empleado']; ?></td>
+            <td><?= ucwords($u['nombre'] . ' ' . $u['apellido_paterno'] . ' ' . $u['apellido_materno']); ?></td>
+            <td><?= $u['correo']; ?></td>
+            <td><?= $u['rol']; ?></td>
             <td>
-                <a href="editar_usuario.php?id=<?php echo $u['id']; ?>">Editar</a> |
-                <a href="eliminar_usuario.php?id=<?php echo $u['id']; ?>" onclick="return confirm('¿Eliminar este usuario?');">Eliminar</a>
+                <a href="editar_usuario.php?id=<?= $u['id']; ?>">Editar</a> |
+                <a href="eliminar_usuario.php?id=<?= $u['id']; ?>" onclick="return confirm('¿Eliminar este usuario?');">Eliminar</a>
             </td>
         </tr>
         <?php endwhile; ?>
@@ -145,8 +153,8 @@ $proyectos = $conn->query("SELECT * FROM proyectos $where");
                 <select name="programador" onchange="document.getElementById('filtrosForm').submit();" style="width: 100%; padding: 6px; border-radius: 5px;">
                     <option value="">-- Todos --</option>
                     <?php mysqli_data_seek($programadores, 0); while ($p = $programadores->fetch_assoc()): ?>
-                        <option value="<?php echo $p['empleado']; ?>" <?php if ($filtro_programador == $p['empleado']) echo 'selected'; ?>>
-                            <?php echo $p['nombre'] . ' ' . $p['apellido_paterno']; ?>
+                        <option value="<?= $p['empleado']; ?>" <?= $filtro_programador == $p['empleado'] ? 'selected' : '' ?>>
+                            <?= ucwords($p['nombre'] . ' ' . $p['apellido_paterno']); ?>
                         </option>
                     <?php endwhile; ?>
                 </select>
@@ -156,10 +164,10 @@ $proyectos = $conn->query("SELECT * FROM proyectos $where");
                 <label style="font-weight:bold; font-size: 14px;">Complejidad:</label>
                 <select name="complejidad" onchange="document.getElementById('filtrosForm').submit();" style="width: 100%; padding: 6px; border-radius: 5px;">
                     <option value="">-- Todas --</option>
-                    <option value="express" <?php if ($filtro_complejidad == 'express') echo 'selected'; ?>>Express</option>
-                    <option value="medio" <?php if ($filtro_complejidad == 'medio') echo 'selected'; ?>>Medio</option>
-                    <option value="complejo" <?php if ($filtro_complejidad == 'complejo') echo 'selected'; ?>>Complejo</option>
-                    <option value="especial" <?php if ($filtro_complejidad == 'especial') echo 'selected'; ?>>Especial</option>
+                    <option value="express" <?= $filtro_complejidad == 'express' ? 'selected' : '' ?>>Express</option>
+                    <option value="medio" <?= $filtro_complejidad == 'medio' ? 'selected' : '' ?>>Medio</option>
+                    <option value="complejo" <?= $filtro_complejidad == 'complejo' ? 'selected' : '' ?>>Complejo</option>
+                    <option value="especial" <?= $filtro_complejidad == 'especial' ? 'selected' : '' ?>>Especial</option>
                 </select>
             </div>
 
@@ -167,9 +175,9 @@ $proyectos = $conn->query("SELECT * FROM proyectos $where");
                 <label style="font-weight:bold; font-size: 14px;">Estatus:</label>
                 <select name="estatus" onchange="document.getElementById('filtrosForm').submit();" style="width: 100%; padding: 6px; border-radius: 5px;">
                     <option value="">-- Todos --</option>
-                    <option value="activo" <?php if ($filtro_estatus == 'activo') echo 'selected'; ?>>Activo</option>
-                    <option value="pausado" <?php if ($filtro_estatus == 'pausado') echo 'selected'; ?>>Pausado</option>
-                    <option value="finalizado" <?php if ($filtro_estatus == 'finalizado') echo 'selected'; ?>>Finalizado</option>
+                    <option value="activo" <?= $filtro_estatus == 'activo' ? 'selected' : '' ?>>Activo</option>
+                    <option value="pausado" <?= $filtro_estatus == 'pausado' ? 'selected' : '' ?>>Pausado</option>
+                    <option value="finalizado" <?= $filtro_estatus == 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
                 </select>
             </div>
         </div>
@@ -196,18 +204,16 @@ $proyectos = $conn->query("SELECT * FROM proyectos $where");
         </tr>
         <?php while ($p = $proyectos->fetch_assoc()): ?>
         <tr>
-            <td><?php echo $p['id']; ?></td>
-            <td><?php echo $p['nombre']; ?></td>
-            <td><?php echo $p['descripcion']; ?></td>
-            <td><?php echo $p['estatus']; ?></td>
-            <td><?php echo $p['complejidad']; ?></td>
-            <td><?php echo $p['asignado_a']; ?></td>
-            <td><?php echo $p['comentarios']; ?></td>
-            <td><?php echo $p['fecha_inicio']; ?></td>
-            <td><?php echo $p['fecha_fin']; ?></td>
-            <td>
-                <a href="editar_proyecto.php?id=<?php echo $p['id']; ?>">Editar</a>
-            </td>
+            <td><?= $p['id']; ?></td>
+            <td><?= $p['nombre']; ?></td>
+            <td><?= $p['descripcion']; ?></td>
+            <td><?= $p['estatus']; ?></td>
+            <td><?= $p['complejidad']; ?></td>
+            <td><?= ucwords($p['nombre_programador'] . ' ' . $p['apellido_programador_paterno'] . ' ' . $p['apellido_programador_materno']); ?></td>
+            <td><?= $p['comentarios']; ?></td>
+            <td><?= $p['fecha_inicio']; ?></td>
+            <td><?= $p['fecha_fin']; ?></td>
+            <td><a href="editar_proyecto.php?id=<?= $p['id']; ?>">Editar</a></td>
         </tr>
         <?php endwhile; ?>
     </table>

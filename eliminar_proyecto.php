@@ -14,10 +14,10 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-// Eliminar proyecto
+
 $conn->query("DELETE FROM proyectos WHERE id = $id");
 
-// También se eliminarán sus documentos si tienes ON DELETE CASCADE configurado
+
 
 header("Location: arquitecto_panel.php");
 exit;

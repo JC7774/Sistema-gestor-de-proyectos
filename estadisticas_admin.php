@@ -7,26 +7,19 @@ if (!isset($_SESSION['empleado']) || $_SESSION['rol'] != 'administrador') {
 
 include 'conexion.php';
 
-$usuarios = $conn->query("SELECT empleado, nombre, apellido_paterno FROM usuarios WHERE rol = 'programador'");
+$usuarios = $conn->query("SELECT id, nombre, apellido_paterno FROM usuarios WHERE rol = 'programador'");
 $filtro_empleado = $_GET['empleado'] ?? '';
-$filtro_complejidad = $_GET['complejidad'] ?? '';
 
-$condiciones = ["u.rol = 'programador'"];
+$condicion = '';
 if ($filtro_empleado !== '') {
-    $condiciones[] = "u.empleado = '$filtro_empleado'";
+    $condicion = "WHERE asignado_a = '$filtro_empleado'";
 }
-if ($filtro_complejidad !== '') {
-    $condiciones[] = "p.complejidad = '$filtro_complejidad'";
-}
-
-$where = implode(" AND ", $condiciones);
 
 $query = $conn->query("
-    SELECT p.estatus, COUNT(*) AS total 
-    FROM proyectos p 
-    JOIN usuarios u ON p.asignado_a = u.empleado 
-    WHERE $where
-    GROUP BY p.estatus
+    SELECT estatus, COUNT(*) AS total 
+    FROM proyectos 
+    $condicion
+    GROUP BY estatus
 ");
 
 $labels = [];
@@ -51,6 +44,7 @@ while ($row = $query->fetch_assoc()) {
         }
         h2 {
             color: #0033A0;
+            text-align: center;
         }
         .card {
             background: white;
@@ -88,26 +82,17 @@ while ($row = $query->fetch_assoc()) {
 <body>
 
 <div class="card">
-    <h2>Estadísticas de Proyectos Asignados a Programadores</h2>
+    <h2>Estadísticas de Proyectos por Estatus</h2>
 
     <form method="GET" action="estadisticas_admin.php">
         <select name="empleado">
             <option value="">Todos los programadores</option>
-            <?php while ($u = $usuarios->fetch_assoc()): ?>
-                <option value="<?php echo $u['empleado']; ?>" <?php if ($filtro_empleado == $u['empleado']) echo 'selected'; ?>>
-                    <?php echo $u['nombre'] . ' ' . $u['apellido_paterno']; ?>
+            <?php mysqli_data_seek($usuarios, 0); while ($u = $usuarios->fetch_assoc()): ?>
+                <option value="<?= $u['id']; ?>" <?= $filtro_empleado == $u['id'] ? 'selected' : '' ?>>
+                    <?= ucwords($u['nombre'] . ' ' . $u['apellido_paterno']); ?>
                 </option>
             <?php endwhile; ?>
         </select>
-
-        <select name="complejidad">
-            <option value="">Todas las complejidades</option>
-            <option value="express" <?php if ($filtro_complejidad == 'express') echo 'selected'; ?>>Express</option>
-            <option value="medio" <?php if ($filtro_complejidad == 'medio') echo 'selected'; ?>>Medio</option>
-            <option value="complejo" <?php if ($filtro_complejidad == 'complejo') echo 'selected'; ?>>Complejo</option>
-            <option value="especial" <?php if ($filtro_complejidad == 'especial') echo 'selected'; ?>>Especial</option>
-        </select>
-
         <input type="submit" value="Filtrar">
     </form>
 
@@ -121,10 +106,10 @@ while ($row = $query->fetch_assoc()) {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: <?php echo json_encode($labels); ?>,
+            labels: <?= json_encode($labels); ?>,
             datasets: [{
                 label: 'Proyectos por estatus',
-                data: <?php echo json_encode($valores); ?>,
+                data: <?= json_encode($valores); ?>,
                 backgroundColor: ['#FFD700', '#0033A0', '#d9534f']
             }]
         },
